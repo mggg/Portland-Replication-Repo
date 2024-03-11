@@ -1,0 +1,295 @@
+import pandas as pd
+import json
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import os 
+from matplotlib.patches import FancyArrowPatch
+
+
+def parse_multiple_json_objects(file_content):
+    decoder = json.JSONDecoder()
+    pos = 0
+    content_length = len(file_content)
+    json_objects = []
+
+    while pos < content_length:
+        obj, next_pos = decoder.raw_decode(file_content, pos)
+        json_objects.append(obj)
+        pos = next_pos
+        # Skip whitespace between JSON objects (if any)
+        while pos < content_length and file_content[pos].isspace():
+            pos += 1
+    
+    return json_objects
+
+
+
+def make_dataframe_from_file(file_name, cand_type):
+    with open(file_name, 'r') as file:
+        file_content = file.read()
+
+    json_objects = parse_multiple_json_objects(file_content)
+
+
+    for i, obj in enumerate(json_objects):
+        json_objects[i] = obj["params"]
+
+    json_objects = sorted(json_objects, key=lambda x: 
+        (
+            x["candidates"]["POC"],
+            x["candidates"]["WP"],
+            x["candidates"]["WM"],
+        )    
+    )
+    
+    
+    df_trie = {}
+
+    for obj in json_objects:
+        cand_tuple = (obj["candidates"]["POC"], obj["candidates"]["WP"], obj["candidates"]["WM"])
+        coh_tuple = (
+            (obj["cohesion"]["C"]["C"], obj["cohesion"]["C"]["WP"], obj["cohesion"]["C"]["WM"]),
+            (obj["cohesion"]["WP"]["C"], obj["cohesion"]["WP"]["WP"], obj["cohesion"]["WP"]["WM"]),
+            (obj["cohesion"]["WM"]["C"], obj["cohesion"]["WM"]["WP"], obj["cohesion"]["WM"]["WM"])
+        )
+        df_trie[cand_tuple] = df_trie.get(cand_tuple, {})
+        df_trie[cand_tuple][coh_tuple] = np.mean(obj["results"][cand_type])
+
+    df_rows = list(df_trie.keys())
+    df_columns = [
+        ((0.8, 0.1, 0.1), (0.1, 0.45, 0.45), (0.1, 0.45, 0.45)), # Race Predominant
+        ((0.6, 0.3, 0.1), (0.3, 0.6, 0.1), (0.1, 0.1, 0.8)), # Race & Ideology
+        ((0.4, 0.3, 0.3), (0.3, 0.4, 0.3), (0.3, 0.3, 0.4)), # Low Polarization
+        ((0.45, 0.45, 0.1), (0.45, 0.45, 0.1), (0.1, 0.1, 0.8)), # Ideology Predominant
+        ((0.8, 0.1, 0.1), (0.8, 0.1, 0.1), (0.1, 0.1, 0.8)), # WP Prefer POC
+        ((0.8, 0.1, 0.1), (0.3, 0.6, 0.1), (0.1, 0.05, 0.85)), # Race & Ideology w/ Strong POC Lean
+        ((0.6, 0.3, 0.1), (0.45, 0.45, 0.1), (0.1, 0.05, 0.85)), # POC Cross, WP Maj. Cross
+        # ((0.8, 0.1, 0.1), (0.1, 0.8, 0.1), (0.1, 0.1, 0.8)), # Strong Bloc Cohesion
+    ]       
+        
+    df_lst = []
+    for row in df_rows:
+        df_lst.append([df_trie[row][col] for col in df_columns])
+        
+    return pd.DataFrame(df_lst, index=df_rows, columns=df_columns)
+
+    
+# def plot_table(df, cand_type, zone, colors):
+#     new_labels = [
+#         "POC: {}\nWP: {}\nWM: {}\n".format(*coh)
+#         for coh in df.columns
+#     ]
+
+#     plt.figure(figsize=(16, 12))
+#     ax = sns.heatmap(df, annot=True, fmt=".3f", cmap=colors, cbar=False, annot_kws={"size": 16})
+#     ax.set_xticklabels(new_labels, rotation=0, fontsize=11)
+#     ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize = 14, rotation=0)
+#     ax.xaxis.tick_top()  # Move x-axis ticks to the top
+#     ax.xaxis.set_label_position('top')  # Move the x-axis label to the top as well
+
+#     plt.title(f'Heatmap of Average {cand_type} Candidate Wins in {zone}', loc='left', pad=110, fontsize=21, x=-0.1 )
+#     # plt.xlabel('Cohesion Configurations\n')
+#     # plt.ylabel('Candidates')
+
+#     # Horizontal lines
+#     for i in range(df.shape[0]):
+#         ax.hlines(i, *ax.get_xlim(), color='white', linewidth=0.5)
+#     # Vertical lines
+#     for i in range(df.shape[1]):
+#         ax.vlines(i, *ax.get_ylim(), color='white', linewidth=0.5)
+
+#     # Example additional text to add above each x-axis label
+#     additional_texts = [
+#         'A:\nRace Predominant', 
+#         'B:\nRace & Ideology', 
+#         'C:\nLow Polarization', 
+#         'D:\nIdeology Predominant',
+#         'E:\nWP Prefer POC',
+#         'F:\nRace & Ideology\nw/Strong POC Lean',
+#         'G:\nPOC Cross,\nWP Maj. Cross',
+#         # 'H:\nStrong Bloc\nCohesion'
+#     ]
+
+#     # # Calculate proper alignment for the additional text
+#     # for i, text in enumerate(additional_texts):
+#     #     # Adjust positioning and font size below
+#     #     ax.text(i + 0.5, +1, text, va='top', ha='center', fontsize=12, transform=ax.get_xaxis_transform())
+
+#     for i, text in enumerate(additional_texts):
+#         ax.text(
+#             i+0.5,
+#             1.09,
+#             text,
+#             va='bottom',
+#             ha='center',
+#             fontsize=10,
+#             fontweight="bold",
+#             transform=ax.get_xaxis_transform(),
+#             rotation=0
+#         )
+
+
+#     # Set the position for the arrow (manually determined, you may need to adjust this)
+#     x_position = -0.08  # This is the left offset from the y-axis
+#     y_position = 0.5 # This centers the arrow in the y-axis
+#     arrow_length = 0.96  # Adjust the length of the arrow as needed
+
+#     # Create the arrow patch
+#     arrow = FancyArrowPatch((x_position, y_position + arrow_length / 2), 
+#                             (x_position, y_position - arrow_length / 2),
+#                             arrowstyle='<|-|>', mutation_scale=20,
+#                             color='black', lw=1, clip_on=False, transform=ax.transAxes)
+
+#     # Add the arrow to the axes
+#     ax.add_patch(arrow)
+
+#     # Add text for 'Few POC Pref Cand.' and 'Many POC Pref Cand.' at the top and bottom of the arrow
+#     ax.text(x_position, y_position + arrow_length / 2 + 0.01, 'Few POC\nPref Cand.', 
+#             ha='center', va='bottom', transform=ax.transAxes, fontsize=12)
+#     ax.text(x_position, y_position - arrow_length / 2 - 0.01, 'Many POC\nPref Cand.', 
+#             ha='center', va='top', transform=ax.transAxes, fontsize=12)
+
+#     plt.tight_layout(pad=1.5)
+#     plt.subplots_adjust(left=0.12, right=0.98) 
+
+#     plt.savefig(f"./tables/table_3_bloc_{cand_type}_wins_in_{'_'.join(zone.split())}_Portland.png")
+   
+
+def plot_table(
+    df, 
+    cand_type,
+    zone,
+    colors,
+    min_val,
+    max_val,
+    exclude_text=False
+):
+    new_labels = [
+        "POC: {}\nWP: {}\nWM: {}\n".format(*coh)
+        for coh in df.columns
+    ]
+
+    if exclude_text:
+        plt.figure(figsize=(14, 10))
+    else:
+        plt.figure(figsize=(16, 12))
+
+    ax = sns.heatmap(
+        df,
+        annot=True,
+        fmt=".3f",
+        cmap=colors,
+        cbar=False,
+        annot_kws={"size": 18},
+        vmin=min_val,
+        vmax=max_val
+    )
+
+    # Horizontal lines
+    for i in range(df.shape[0]):
+        ax.hlines(i, *ax.get_xlim(), color='white', linewidth=0.5)
+    # Vertical lines
+    for i in range(df.shape[1]):
+        ax.vlines(i, *ax.get_ylim(), color='white', linewidth=0.5)
+   
+    
+    plot_title = f"table_3_bloc_{cand_type}_wins_in_{'_'.join(zone.split())}_Portland"
+
+    if exclude_text:
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        plt.tight_layout(pad=0)
+        plt.savefig(f"./tables/{plot_title}_unlabeled.png")
+
+        plt.close()
+        return
+
+    ax.set_xticklabels(new_labels, rotation=0, fontsize=11)
+    ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize = 16, rotation=0)
+    ax.xaxis.tick_top()  # Move x-axis ticks to the top
+    ax.xaxis.set_label_position('top')  # Move the x-axis label to the top as well
+
+    # Example additional text to add above each x-axis label
+    additional_texts = [
+        'A:\nRace Predominant', 
+        'B:\nRace & Ideology', 
+        'C:\nLow Polarization', 
+        'D:\nIdeology Predominant',
+        'E:\nWP Prefer POC',
+        'F:\nRace & Ideology\nw/Strong POC Lean',
+        'G:\nPOC Cross,\nWP Maj. Cross',
+        # 'H:\nStrong Bloc\nCohesion'
+    ]
+
+    for i, text in enumerate(additional_texts):
+        ax.text(
+            i+0.5,
+            1.09,
+            text,
+            va='bottom',
+            ha='center',
+            fontsize=11,
+            fontweight="bold",
+            transform=ax.get_xaxis_transform(),
+            rotation=0
+        )
+
+
+    # Set the position for the arrow
+    x_position = -0.08
+    y_position = 0.5
+    arrow_length = 0.96
+
+    # Create the arrow patch
+    arrow = FancyArrowPatch((x_position, y_position + arrow_length / 2), 
+                            (x_position, y_position - arrow_length / 2),
+                            arrowstyle='<|-|>', mutation_scale=20,
+                            color='black', lw=1, clip_on=False, transform=ax.transAxes)
+
+    ax.add_patch(arrow)
+    ax.text(x_position, y_position + arrow_length / 2 + 0.01, 'Few POC\nPref Cand.', 
+            ha='center', va='bottom', transform=ax.transAxes, fontsize=12)
+    ax.text(x_position, y_position - arrow_length / 2 - 0.01, 'Many POC\nPref Cand.', 
+            ha='center', va='top', transform=ax.transAxes, fontsize=12)
+    
+
+    # Make layout a bit nicer
+    plt.tight_layout(pad=1.5)
+    plt.subplots_adjust(left=0.12, right=0.98) 
+
+    plt.savefig(f"./tables/{plot_title}_labeled.png")
+    plt.close()
+    
+    
+if __name__ == "__main__":
+    color_dict = {
+        "C": "Greens",
+        "WP": "Blues",
+        "WM": "Reds"
+    }
+    
+    for cand_type in ["C", "WP", "WM"]:
+        df1 = make_dataframe_from_file("zone1_1000_results_3bloc.json", cand_type)     
+        df2 = make_dataframe_from_file("zone2_1000_results_3bloc.json", cand_type)
+        df3 = make_dataframe_from_file("zone3_1000_results_3bloc.json", cand_type)
+        df4 = make_dataframe_from_file("zone4_1000_results_3bloc.json", cand_type)
+        
+        df_all = (df1 + df2 + df3 + df4)
+        
+        plot_table(df1, cand_type, "Zone 1", color_dict[cand_type], 0, 3)
+        plot_table(df2, cand_type, "Zone 2", color_dict[cand_type], 0, 3)
+        plot_table(df3, cand_type, "Zone 3", color_dict[cand_type], 0, 3)
+        plot_table(df4, cand_type, "Zone 4", color_dict[cand_type], 0, 3)
+        plot_table(df_all, cand_type, "All Zones", color_dict[cand_type], 0, 12)
+        
+        
+        plot_table(df1, cand_type, "Zone 1", color_dict[cand_type], 0, 3, True)
+        plot_table(df2, cand_type, "Zone 2", color_dict[cand_type], 0, 3, True)
+        plot_table(df3, cand_type, "Zone 3", color_dict[cand_type], 0, 3, True)
+        plot_table(df4, cand_type, "Zone 4", color_dict[cand_type], 0, 3, True)
+        plot_table(df_all, cand_type, "All Zones", color_dict[cand_type], 0, 12, True)
+       
+        
+        
