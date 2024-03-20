@@ -137,12 +137,12 @@ def plot_table(
 
     # Example additional text to add above each x-axis label
     additional_texts = [
-        'A:\nRace Predominant', 
-        'B:\nRace & Ideology', 
+        'A:\nRace\nPredominates', 
+        'B:\nRace + Ideo.', 
         'C:\nLow Polarization', 
-        # 'D:\nIdeology Predominant',
+        # 'D:\nIdeo.\nPredominates',
         'E:\nWP Prefer POC',
-        'F:\nRace & Ideology\nw/Strong POC Lean',
+        'F:\nRace + Ideo.,\nStrong POC Lean',
         'G:\nPOC Cross,\nWP Maj. Cross',
         # 'H:\nStrong Bloc\nCohesion'
     ]
@@ -150,7 +150,7 @@ def plot_table(
     for i, text in enumerate(additional_texts):
         ax.text(
             i+0.5,
-            1.11,
+            1.10,
             text,
             va='bottom',
             ha='center',
@@ -184,6 +184,102 @@ def plot_table(
     plt.subplots_adjust(left=0.12, right=0.98) 
 
     plt.savefig(f"./tables/{plot_title}_labeled.png")
+  
+
+def plot_table_3(
+    df, 
+    cand_type,
+    zone,
+    colors,
+    min_val,
+    max_val,
+    extra_suffix,
+):
+    new_labels = [
+        "POC: {}\nW: {}\n".format(*coh)
+        for coh in df.columns
+    ]
+
+    plt.figure(figsize=(14, 8))
+
+    ax = sns.heatmap(
+        df,
+        annot=True,
+        fmt=".3f",
+        cmap=colors,
+        cbar=False,
+        annot_kws={"size": 18},
+        vmin=min_val,
+        vmax=max_val
+    )
+
+    # Horizontal lines
+    for i in range(df.shape[0]):
+        ax.hlines(i, *ax.get_xlim(), color='white', linewidth=0.5)
+    # Vertical lines
+    for i in range(df.shape[1]):
+        ax.vlines(i, *ax.get_ylim(), color='white', linewidth=0.5)
+   
+    
+    plot_title = f"table_2_bloc_{cand_type}_wins_in_{'_'.join(zone.split())}_Portland"
+
+    ax.set_xticklabels(new_labels, rotation=0, fontsize=11)
+    ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize = 16, rotation=0)
+    ax.xaxis.tick_top()  # Move x-axis ticks to the top
+    ax.xaxis.set_label_position('top')  # Move the x-axis label to the top as well
+
+    # Example additional text to add above each x-axis label
+    additional_texts = [
+        'A:\nRace\nPredominates', 
+        'B:\nRace + Ideo.', 
+        'C:\nLow Polarization', 
+        # 'D:\nIdeo.\nPredominates',
+        'E:\nWP Prefer POC',
+        'F:\nRace + Ideo.,\nStrong POC Lean',
+        'G:\nPOC Cross,\nWP Maj. Cross',
+        # 'H:\nStrong Bloc\nCohesion'
+    ]
+
+
+    for i, text in enumerate(additional_texts):
+        ax.text(
+            i+0.5,
+            1.11,
+            text,
+            va='bottom',
+            ha='center',
+            fontsize=11,
+            fontweight="bold",
+            transform=ax.get_xaxis_transform(),
+            rotation=0
+        )
+
+
+    # Set the position for the arrow
+    x_position = -0.10
+    y_position = 0.5
+    arrow_length = 0.96
+
+    # Create the arrow patch
+    arrow = FancyArrowPatch((x_position, y_position + arrow_length / 2), 
+                            (x_position, y_position - arrow_length / 2),
+                            arrowstyle='<|-|>', mutation_scale=20,
+                            color='black', lw=1, clip_on=False, transform=ax.transAxes)
+
+    ax.add_patch(arrow)
+    ax.text(x_position, y_position + arrow_length / 2 + 0.01, 'Few POC\nPref Cand.', 
+            ha='center', va='bottom', transform=ax.transAxes, fontsize=12)
+    ax.text(x_position, y_position - arrow_length / 2 - 0.01, 'Many POC\nPref Cand.', 
+            ha='center', va='top', transform=ax.transAxes, fontsize=12)
+    
+
+    # Make layout a bit nicer
+    plt.tight_layout(pad=1.5)
+    plt.subplots_adjust(left=0.12, right=0.98) 
+
+    plt.savefig(f"./tables/{plot_title}{extra_suffix}.png")
+    plt.close()
+  
     
 if __name__ == "__main__":
     color_dict = {
@@ -211,4 +307,8 @@ if __name__ == "__main__":
         plot_table(df4, cand_type, "Zone 4", color_dict[cand_type], 0, 3, True)
         plot_table(df_all, cand_type, "All Zones", color_dict[cand_type], 0, 12, True)
         
-       
+        plot_table_3(df1.loc[[(2,10),(3,10),(4,10)]], cand_type, "Zone 1", color_dict[cand_type], 0, 3,"_(2,3,4)_cross_section")
+        plot_table_3(df2.loc[[(2,10),(3,10),(4,10)]], cand_type, "Zone 2", color_dict[cand_type], 0, 3,"_(2,3,4)_cross_section")
+        plot_table_3(df3.loc[[(2,10),(3,10),(4,10)]], cand_type, "Zone 3", color_dict[cand_type], 0, 3,"_(2,3,4)_cross_section")
+        plot_table_3(df4.loc[[(2,10),(3,10),(4,10)]], cand_type, "Zone 4", color_dict[cand_type], 0, 3,"_(2,3,4)_cross_section")
+        plot_table_3(df_all.loc[[(2,10),(3,10),(4,10)]], cand_type, "All Zones", color_dict[cand_type], 0, 12,"_(2,3,4)_cross_section")
