@@ -1,6 +1,5 @@
 from votekit.elections import STV, fractional_transfer
 from votekit import CambridgeSampler
-#from utils import BradleyTerry ## import BradleyTerry from here not votekit
 import random
 from votekit.graphs import PairwiseComparisonGraph
 import numpy as np
@@ -22,8 +21,6 @@ candidates_to_select = {
 }
 
 def simulate_ensembles(
-    #ensemble: list,
-    #election: str,
     cohesion: dict,
     seats: int,
     num_elections: int,
@@ -42,9 +39,7 @@ def simulate_ensembles(
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
 
-    # Portland blocks and coorsponding white VAP
-    # Option 1 WC + Non-Progressive Whites Grouped as WC
-    # Option 2 Leave Out Non-Progressive Whites
+    # Portland blocks and coorsponding POC and White VAP
 
     zone_shares = {1: {"C": 0.38, "W": 0.62},
             2: {"C": 0.26, "W": 0.74},
@@ -56,7 +51,7 @@ def simulate_ensembles(
         if total_share != 1:
             print(f"Zone {zone} sum is {total_share}, which does not equal 1.")
 
-    # Interate across the 4 Portland blocks
+    # Iterate across the 4 Portland blocks
     for zn in zone_shares.keys():
         assert set(zone_shares.keys()) == {1, 2, 3, 4}, "Unexpected zones in zone_shares"
         print('zone', zn)
@@ -118,6 +113,7 @@ def simulate_ensembles(
     
 
 def condense_results_single_cand (plan_results):
+    """Condenses the 4-zone election results to city level for a single candidate"""
     election_results = {}
     
     for election_type in ballot_generators:
@@ -131,12 +127,13 @@ def condense_results_single_cand (plan_results):
             else: 
                 summed_zone_results = np.add(summed_zone_results, win_list)
         election_results[election_type] = summed_zone_results
-        print("TO SEE")
-        print(election_results[election_type])
+        #print("TO SEE")
+        #print(election_results[election_type])
 
     return election_results
 
 def condense_results(plan_results):
+    """Condenses the 4-zone election results to city level"""
     election_results = {}
     
     for election_type in ballot_generators:
