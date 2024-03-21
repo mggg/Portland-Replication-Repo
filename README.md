@@ -13,7 +13,7 @@ To replicate the study results on a cluster for both relevant bloc scenarios:
 $ sbatch runner.sh
 ```
 
-This generates JSON files representing simulated elections in the `Results` folder, along with visual representations of each election in the `Histograms` folder.
+This generates JSON files representing simulated elections in the `Results` folder, along with visual representations of each election in the `Histograms` folder. You can track the progress of each election run on the cluster by accessing its respective file in the `Port_logs`, while the terminal output for each run is stored in the `Port_outputs` folder.
 
 For instance, to replicate the scenarios involving two voting blocs, execute the above command within the `1000_Election_Results/2_bloc` directory.
 
@@ -37,4 +37,5 @@ The code for setting up these scenarios is located in  `submit_port.sh` for each
 
 ## Data  
 
+## Notes
 
