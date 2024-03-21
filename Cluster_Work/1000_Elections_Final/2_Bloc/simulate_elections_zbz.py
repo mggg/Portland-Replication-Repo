@@ -8,26 +8,35 @@ import os
 import argparse
 import re
 
-
+# Specifies the type of ballot generator to be used to simulate elections 
 ballot_generators = {
     "sp": "Slate Preference"
 }
 
 def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, 
                         cohesion_poc_params, cohesion_white_progressive_params, num_elections):
+    """
+    Runs a simulated elections based on inputted parameteres that specify how many POC and W preferred candidates
+    are running, their percieved stregth, and levels of voter cohesion witin the groups.
+    """
 
+    # Number of candidates running within each group
     candidates_poc = candidates[0]
     candidates_wp = candidates[1]
 
+    # Stregth levels for POC
     alpha_poc_1 = alpha_poc_params[0]
     alpha_poc_2 = alpha_poc_params[1]
 
+    # Stregth levels for W
     alpha_wp_1 = alpha_wp_params[0]
     alpha_wp_2 = alpha_wp_params[1]
 
+    # Coehsion levels for POC voters
     coh_poc_1 = cohesion_poc_params[0]
     coh_poc_2 = cohesion_poc_params[1]
 
+    # Coehsion levels for W voters
     coh_wp_1 = cohesion_white_progressive_params[0]
     coh_wp_2 = cohesion_white_progressive_params[1]
 
@@ -36,6 +45,7 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params,
     cohesion = {"C": {"C": coh_poc_1, "W": coh_poc_2},
             "W": {"C": coh_wp_1, "W": coh_wp_2}}
 
+    # Run election simulations
     basic_start = simulate_ensembles(
         cohesion=cohesion, 
         seats=3,
@@ -45,20 +55,22 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params,
     )
 
     basic_start_zone_data, aggregated_data = basic_start
-    # iterate across each zones
     cand_types = ['C', 'W']
     cand_long = {'C':'POC Preferred', 'W':'White'}
     cand_color = {'C':'royalblue', 'W':'orange'}
     print('basic_start_zone_data',basic_start_zone_data)
+
+    # Extract election results for each zone
     for zone_data in basic_start_zone_data:
         print('hist zone', zone_data)
         curr_zone = zone_data['zone']
         print('hist curr zone', curr_zone)
         results = zone_data['sp']
         print('hist results', results)
-
+        
+        # Extract election results for each candidate type within the zone
         for curr_cand in cand_types:
-            # Update the params string to accurately reflect simulation setup
+    
             params = (
                 f"MODEL PARAMETERS\n"
                 f"\n"
@@ -94,6 +106,8 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params,
                 os.makedirs(output_directory)
             json_output_path = os.path.join(output_directory, json_filename)
 
+            # Save election results within JSON file 
+            # Note: these files need not be cadidate type specific as they contain all of the data for the zone
             with open(json_output_path, 'a') as json_file:
                 json.dump(election_results, json_file, indent=4)
 
@@ -105,6 +119,7 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params,
                 f'{num_elections}sims'
             )
 
+            # Histograms to observe results
             generate_histogram(
                 data=zone_data['sp'][curr_cand],  
                 cand_type=cand_long[curr_cand],
@@ -147,16 +162,19 @@ def generate_histogram(data, cand_type, election_type, simulation_type, params, 
     # Ensure that the bins on the x-axis include 0, 1, 2, and 3
     bin_edges = np.arange(-0.5, max(unique_values) + 1.5, 1)
     ax[0].hist(data, bins=bin_edges, align='mid', alpha=0.7, edgecolor='black', color=color)
+
+    # Max possible elected individuals in each zone is 3  
     if zone:
-        ax[0].set_xticks([0, 1, 2, 3])
+        ax[0].set_xticks([0, 1, 2, 3]) 
     else:
-        ax[0].set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
+        ax[0].set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8]) # This could go to 12 instead
         
     ax[0].set_ylim(0, num_elections)  # Set to the number of simulated elections
     ax[0].set_xlabel('Number of Elected ' + cand_type + ' Candidates')
     ax[0].set_ylabel('Frequency')
     ax[0].set_title(f'Histogram for {election_type.upper()} Model')
-     # Display the average and parameters text
+    
+    # Display the average and parameters text
     average_value = np.mean(data)
     
     # Create an external legend box for params
@@ -213,6 +231,7 @@ def main():
     cohesion_poc_params = [float(i) for i in args.cohesion_poc_params.split(' ')]
     cohesion_white_progressive_params = [float(i) for i in args.cohesion_white_progressive_params.split(' ')]
 
+    # Run elections
     simulate_elections(
         candidates = candidates,
         alpha_poc_params=alpha_poc_params,
