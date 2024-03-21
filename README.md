@@ -1,6 +1,6 @@
 # Portland Rank Choice Voting Replication Repository
 
-This repository contains the code and data used to replicate the findings of the study conducted by MGGG on rank choice voting in Portland, Oregon.
+This repository contains the code and data used to replicate the findings of the study conducted by MGGG on rank choice voting for Portland, Oregon's 2024 city council election.
 
 ## How to Replicate
 
