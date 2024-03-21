@@ -1,6 +1,5 @@
 from votekit.elections import STV, fractional_transfer
 from votekit import CambridgeSampler
-#from utils import BradleyTerry ## import BradleyTerry from here not votekit
 import random
 from votekit.graphs import PairwiseComparisonGraph
 import numpy as np
@@ -16,6 +15,9 @@ ballot_generators = {
     "sp": SlatePreference
 }
 
+# WP = White progressive preferred candidates
+# WM = White moderate preferred candidates
+# WM = POC preferred candidates
 candidates_to_select = {
     "WP": ["WP1", "WP2", "WP3", "WP4", "WP5", "WP6", "WP7", "WP8", "WP9", "WP10"],
     "WM": ["WM1", "WM2", "WM3", "WM4", "WM5", "WM6", "WM7", "WM8", "WM9", "WM10"],
@@ -23,8 +25,6 @@ candidates_to_select = {
 }
 
 def simulate_ensembles(
-    #ensemble: list,
-    #election: str,
     cohesion: dict,
     seats: int,
     num_elections: int,
@@ -43,10 +43,8 @@ def simulate_ensembles(
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
 
-    # Portland blocks and coorsponding white VAP
-    # Option 1 WM + Non-Progressive Whites Grouped as WM
-    # Option 2 Leave Out Non-Progressive Whites
-
+    # Portland blocks and coorsponding VAP for each group (POC, White progressive, White moderate)
+    # Numbers calculated though analysis of Portland's voterfile
     zone_shares = {1: {"C": 0.38, "WP": 0.43, "WM": 0.19},
             2: {"C": 0.26, "WP": 0.68, "WM": 0.06},
             3: {"C": 0.20, "WP": 0.73, "WM": 0.07},
@@ -72,7 +70,8 @@ def simulate_ensembles(
             "WM": candidates_to_select["WM"][:candidates[2]],  
             "C": candidates_to_select["C"][:candidates[0]],   
         }
-        # loop through number of simulated RCV elections
+
+        # Loop through number of simulated RCV elections
         for _ in range(num_elections):
             for model_name, model in ballot_generators.items():
                 data = {
@@ -86,9 +85,9 @@ def simulate_ensembles(
                 #print("Preference Intervals:", generator.pref_intervals_by_bloc)
 
                 ballots = generator.generate_profile(num_ballots)
-
                 #ballots.to_csv(current_dir + '/ballots.csv')
 
+                # Run 3 bloc election
                 results = STV(
                     ballots,
                     transfer=fractional_transfer,
@@ -98,6 +97,7 @@ def simulate_ensembles(
                     tiebreak = "random", # Added from chris' code
                 ).run_election()
 
+                # Determine the number of winners for each bloc
                 num_winners_c = count_winners(results.winners(), "C")
                 num_winners_wp = count_winners(results.winners(), "WP")
                 num_winners_wm = count_winners(results.winners(), "WM")
@@ -114,6 +114,7 @@ def simulate_ensembles(
 
         plan_results.append(zone_data)
 
+    # Have results be reflected on a city-wide level
     condensed = condense_results(plan_results)
 
     print(f"Plan Results {zn}", plan_results)
@@ -123,6 +124,7 @@ def simulate_ensembles(
     
 
 def condense_results_single_cand (plan_results):
+    """Condenses the 4-zone election results to city level for a single candidate"""
     election_results = {}
     
     for election_type in ballot_generators:
@@ -136,12 +138,13 @@ def condense_results_single_cand (plan_results):
             else: 
                 summed_zone_results = np.add(summed_zone_results, win_list)
         election_results[election_type] = summed_zone_results
-        print("TO SEE")
-        print(election_results[election_type])
+        #print("TO SEE")
+        #print(election_results[election_type])
 
     return election_results
 
 def condense_results(plan_results):
+    """Condenses the 4-zone election results to city level"""
     election_results = {}
     
     for election_type in ballot_generators:
@@ -171,7 +174,7 @@ def count_winners(elected: list[set], party: str) -> int:
 
     for winner_set in elected:
         for cand in winner_set:
-            if cand[0] == party or cand[0:2] == party:
+            if cand[0] == party or cand[0:2] == party: # allows for 'C' or 'WP'
                 winner_count += 1
 
     return winner_count
