@@ -17,9 +17,9 @@ This generates JSON files representing simulated elections in the `Results` fold
 
 For instance, to replicate the scenarios involving two voting blocs, execute the above command within the `1000_Election_Results/2_bloc` directory.
 
-## Election Scenerios  
+## Election Scenarios  
 
-Within this study, the following election scenerios were used to simulate rank choice voting patterns in Portland:  
+Within this study, the following election scenarios were used to simulate rank choice voting patterns in Portland:  
 
 |  | Voter Cohesion/Crossover Scenario                | Support splits in 3-bloc setting (POC-WP-WM) | Support splits in 2-bloc setting (POC-W) |
 |---------|--------------------------------------------------|---------------------------------------------|------------------------------------------|
