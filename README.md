@@ -13,9 +13,14 @@ To replicate the study results on a cluster for both relevant bloc scenarios:
 $ sbatch runner.sh
 ```
 
+This generates JSON files representing simulated elections in the `Results` folder, along with visual representations of each election in the `Histograms` folder.
+
 For instance, to replicate the scenarios involving two voting blocs, execute the above command within the `1000_Election_Results/2_bloc` directory.
 
-## Outputted Scenerios  
+## Election Scenerios  
+
+Within this study, the following election scenerios were used to simulate rank choice voting patterns in Portland:  
+
 |  | Voter Cohesion/Crossover Scenario                | Support splits in 3-bloc setting (POC-WP-WM) | Support splits in 2-bloc setting (POC-W) |
 |---------|--------------------------------------------------|---------------------------------------------|------------------------------------------|
 | A       | Race predominates                                | 80-10-10 / 10-45-45 / 10-45-45             | 80-20 / 10-90                            |
@@ -29,5 +34,7 @@ For instance, to replicate the scenarios involving two voting blocs, execute the
 Each election scenerio was run 1000 times.
 
 The code for setting up these scenarios is located in  `submit_port.sh` for each corresponding bloc.
+
+## Data  
 
 
