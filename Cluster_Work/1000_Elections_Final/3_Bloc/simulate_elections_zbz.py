@@ -8,7 +8,8 @@ import os
 import argparse
 import re
 
-
+# Specifies the type of ballot generator to be used to simulate elections 
+# as of now only SP allows for 3-bloc runs
 ballot_generators = {
     "sp": "Slate Preference"
 }
@@ -16,31 +17,42 @@ ballot_generators = {
 def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_params, 
                         cohesion_poc_params, cohesion_white_progressive_params, 
                         cohesion_white_conservative_params, num_elections):
+    """
+    Runs a simulated elections based on inputted parameteres that specify how many POC, WP, and WM preferred candidates
+    are running, their percieved stregth, and levels of voter cohesion witin the groups.
+    """
 
+    # Number of candidates running within each group
     candidates_poc = candidates[0]
     candidates_wp = candidates[1]
     candidates_wm = candidates[2]
 
+    # Perceived strength for each perferred candidate type from POC voters
     alpha_poc_1 = alpha_poc_params[0]
     alpha_poc_2 = alpha_poc_params[1]
     alpha_poc_3 = alpha_poc_params[2]
 
+    # Perceived strength for each perferred candidate type from WP voters
     alpha_wp_1 = alpha_wp_params[0]
     alpha_wp_2 = alpha_wp_params[1]
     alpha_wp_3 = alpha_wp_params[2]
 
+    # Perceived strength for each perferred candidate type from WM voters
     alpha_wm_1 = alpha_wm_params[0]
     alpha_wm_2 = alpha_wm_params[1]
     alpha_wm_3 = alpha_wm_params[2]
 
+    # Cohesion levels for POC voters
     coh_poc_1 = cohesion_poc_params[0]
     coh_poc_2 = cohesion_poc_params[1]
     coh_poc_3 = cohesion_poc_params[2]
 
+    # Cohesion levels for WP voters
     coh_wp_1 = cohesion_white_progressive_params[0]
     coh_wp_2 = cohesion_white_progressive_params[1]
     coh_wp_3 = cohesion_white_progressive_params[2]
 
+    # Cohesion levels for WM voters
     coh_wm_1 = cohesion_white_conservative_params[0]
     coh_wm_2 = cohesion_white_conservative_params[1]
     coh_wm_3 = cohesion_white_conservative_params[2]
@@ -52,6 +64,7 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_p
             "WP": {"C": coh_wp_1, "WP": coh_wp_2, "WM": coh_wp_3},
             "WM": {"C": coh_wm_1, "WP": coh_wm_2, "WM": coh_wm_3}}
 
+    # Simulate election
     basic_start = simulate_ensembles(
         cohesion=cohesion, 
         seats=3,
@@ -61,11 +74,12 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_p
     )
 
     basic_start_zone_data, aggregated_data = basic_start
-    # iterate across each zones
     cand_types = ['C', 'WP', 'WM']
     cand_long = {'C':'POC Preferred', 'WP':'White Progressive Preferred', 'WM':'White Moderate Preferred'}
     cand_color = {'C':'skyblue', 'WP':'lightgreen', 'WM':'lightcoral'}
     print('basic_start_zone_data',basic_start_zone_data)
+
+    # Iterate across each zone
     for zone_data in basic_start_zone_data:
         print('hist zone', zone_data)
         curr_zone = zone_data['zone']
@@ -73,8 +87,9 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_p
         results = zone_data['sp']
         print('hist results', results)
 
+        # Iterate through each candidate type within respective zone
         for curr_cand in cand_types:
-            # Update the params string to accurately reflect simulation setup
+            
             params = (
                 f"MODEL PARAMETERS\n"
                 f"\n"
@@ -114,6 +129,8 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_p
                 os.makedirs(output_directory)
             json_output_path = os.path.join(output_directory, json_filename)
 
+            # Save election results within JSON file 
+            # Note: these files need not be cadidate type specific as they contain all of the data for the zone
             with open(json_output_path, 'a') as json_file:
                 json.dump(election_results, json_file, indent=4)
 
@@ -140,6 +157,7 @@ def simulate_elections(candidates, alpha_poc_params, alpha_wp_params, alpha_wm_p
                 color=cand_color[curr_cand]
             )
 
+            # Histograms to observe results
             generate_histogram(
                 data=aggregated_data['sp'][curr_cand],  
                 cand_type=cand_long[curr_cand],
@@ -169,16 +187,19 @@ def generate_histogram(data, cand_type, election_type, simulation_type, params, 
     # Ensure that the bins on the x-axis include 0, 1, 2, and 3
     bin_edges = np.arange(-0.5, max(unique_values) + 1.5, 1)
     ax[0].hist(data, bins=bin_edges, align='mid', alpha=0.7, edgecolor='black', color=color)
+   
+    # Max possible elected individuals in each zone is 3 
     if zone:
         ax[0].set_xticks([0, 1, 2, 3])
     else:
-        ax[0].set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
+        ax[0].set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
         
     ax[0].set_ylim(0, num_elections)  # Set to the number of simulated elections
     ax[0].set_xlabel('Number of Elected ' + cand_type + ' Candidates')
     ax[0].set_ylabel('Frequency')
     ax[0].set_title(f'Histogram for {election_type.upper()} Model')
-     # Display the average and parameters text
+    
+    # Display the average and parameters text
     average_value = np.mean(data)
     
     # Create an external legend box for params
@@ -239,6 +260,7 @@ def main():
     cohesion_white_progressive_params = [float(i) for i in args.cohesion_white_progressive_params.split(' ')]
     cohesion_white_conservative_params= [float(i) for i in args.cohesion_white_conservative_params.split(' ')]
 
+    # Run simulated election
     simulate_elections(
         candidates = candidates,
         alpha_poc_params=alpha_poc_params,
