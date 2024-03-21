@@ -4,7 +4,7 @@ This repository contains the code and data used to replicate the findings of the
 
 ## How to Replicate
 
-To replicate the study results on a cluster for both relevant bloc scenarios:
+To replicate the study results on a high-performance cluster for both relevant bloc scenarios:
 
 1. Navigate to the respective folder.
 2. Run the following command:
@@ -38,4 +38,4 @@ The code for setting up these scenarios is located in  `submit_port.sh` for each
 ## Data  
 
 ## Notes
-
+Due to the computational demands of the election scenarios, the simulations were executed on a high-performance cluster. The completion time for the two-bloc scenarios averaged approximately 10 hours, while the three-bloc runs required approximately 20 hours to finish.
